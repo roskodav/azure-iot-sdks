@@ -4,3 +4,5 @@
 #this is CMakeLists for testtools. It does nothing, except loads other folders
 
 add_subdirectory(iothub_test)
+add_subdirectory(X509CertGenerator)
+
