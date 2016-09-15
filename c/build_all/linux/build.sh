@@ -12,6 +12,7 @@ run_longhaul_tests=OFF
 build_amqp=ON
 build_http=ON
 build_mqtt=ON
+no_blob=OFF
 use_wsio=OFF
 skip_unittests=OFF
 build_python=OFF
@@ -21,6 +22,7 @@ build_folder=$build_root"/cmake/iotsdk_linux"
 make=true
 toolchainfile=" "
 cmake_install_prefix=" "
+no_logging=OFF
 
 usage ()
 {
@@ -30,11 +32,12 @@ usage ()
     echo "   Example: -cl -O1 -cl ..."
     echo " --run-e2e-tests               run the end-to-end tests (e2e tests are skipped by default)"
     echo " --skip-unittests              skip the running of unit tests (unit tests are run by default)"
-	echo " --run-longhaul-tests          run long haul tests (long haul tests are not run by default)"
+	 echo " --run-longhaul-tests          run long haul tests (long haul tests are not run by default)"
     echo ""
     echo " --no-amqp                     do no build AMQP transport and samples"
     echo " --no-http                     do no build HTTP transport and samples"
     echo " --no-mqtt                     do no build MQTT transport and samples"
+    echo " --no_uploadtoblob             do no build upload to blob"
     echo " --no-make                     do not run make after cmake"
     echo " --use-websockets              Enables the support for AMQP over WebSockets."
     echo " --toolchain-file <file>       pass cmake a toolchain file for cross compiling"
@@ -42,6 +45,7 @@ usage ()
     echo " --build-python <version>      build Python C wrapper module (requires boost) with given python version (2.7 3.4 3.5 are currently supported)"
     echo " --build-javawrapper           build java C wrapper module"
     echo " -rv, --run_valgrind           will execute ctest with valgrind"
+    echo " --no-logging                  Disable logging"
     exit 1
 }
 
@@ -86,12 +90,14 @@ process_args ()
               "--no-amqp" ) build_amqp=OFF;;
               "--no-http" ) build_http=OFF;;
               "--no-mqtt" ) build_mqtt=OFF;;
+              "--no_uploadtoblob" ) no_blob=ON;;
               "--no-make" ) make=false;;
               "--use-websockets" ) use_wsio=ON;;
               "--build-python" ) save_next_arg=3;;
               "--build-javawrapper" ) build_javawrapper=ON;;
               "--toolchain-file" ) save_next_arg=2;;
               "-rv" | "--run_valgrind" ) run_valgrind=1;;
+              "--no-logging" ) no_logging=ON;;
               "--install-path-prefix" ) save_next_arg=4;;
               * ) usage;;
           esac
@@ -115,7 +121,7 @@ process_args $*
 rm -r -f $build_folder
 mkdir -p $build_folder
 pushd $build_folder
-cmake $toolchainfile $cmake_install_prefix -Drun_valgrind:BOOL=$run_valgrind -DcompileOption_C:STRING="$extracloptions" -Drun_e2e_tests:BOOL=$run_e2e_tests -Drun_longhaul_tests=$run_longhaul_tests -Duse_amqp:BOOL=$build_amqp -Duse_http:BOOL=$build_http -Duse_mqtt:BOOL=$build_mqtt -Duse_wsio:BOOL=$use_wsio -Dskip_unittests:BOOL=$skip_unittests -Dbuild_python:STRING=$build_python -Dbuild_javawrapper:BOOL=$build_javawrapper $build_root
+cmake $toolchainfile $cmake_install_prefix -Drun_valgrind:BOOL=$run_valgrind -DcompileOption_C:STRING="$extracloptions" -Drun_e2e_tests:BOOL=$run_e2e_tests -Drun_longhaul_tests=$run_longhaul_tests -Duse_amqp:BOOL=$build_amqp -Duse_http:BOOL=$build_http -Duse_mqtt:BOOL=$build_mqtt -Ddont_use_uploadtoblob:BOOL=$no_blob -Duse_wsio:BOOL=$use_wsio -Dskip_unittests:BOOL=$skip_unittests -Dbuild_python:STRING=$build_python -Dbuild_javawrapper:BOOL=$build_javawrapper -Dno_logging:BOOL=$no_logging $build_root
 
 if [ "$make" = true ]
 then
