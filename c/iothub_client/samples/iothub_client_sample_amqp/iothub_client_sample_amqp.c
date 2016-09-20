@@ -108,7 +108,7 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT ReceiveMessageCallback(IOTHUB_MESSAGE_HA
         }
     }
 
-    if (memcmp(buffer, "quit", strlen("quit")) == 0)
+	if (size != 0 && memcmp(buffer, "quit", size) == 0)
     {
         g_continueRunning = false;
     }
