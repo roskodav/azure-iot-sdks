@@ -42,6 +42,7 @@ if(WIN32)
 			iothub_service_client
 			aziotsharedutil
 			iothub_client_http_transport
+            rpcrt4
 		)
 		linkSharedUtil(${theseTestsName}_dll)
 		linkUAMQP(${theseTestsName}_dll)
@@ -58,6 +59,7 @@ if(WIN32)
 			iothub_service_client
 			aziotsharedutil
 			iothub_client_http_transport
+            rpcrt4
 		)
 		linkSharedUtil(${theseTestsName}_exe)
 		linkUAMQP(${theseTestsName}_exe)
@@ -69,6 +71,7 @@ if(WIN32)
 			serializer
 			iothub_test
 			iothub_service_client
+            rpcrt4
 		)
 	endif()
 else()
