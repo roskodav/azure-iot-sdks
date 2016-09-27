@@ -383,16 +383,12 @@ static XIO_HANDLE getTLSIOTransport(const char* fqdn, int port)
     tls_io_config.hostname = fqdn;
     tls_io_config.port = port;
     const IO_INTERFACE_DESCRIPTION* io_interface_description = platform_get_default_tlsio();
-    result = xio_create(io_interface_description, &tls_io_config);
-    if (result == NULL)
+
+    if ((result = xio_create(io_interface_description, &tls_io_config)) == NULL)
     {
-        LogError("unable to xio_create");
-        /*return as is*/
+        LogError("Failed to get the TLS/IO transport (xio_create failed)");
     }
-    else
-    {
-        /*also return as is*/
-    }
+
     return result;
 }
 
@@ -707,7 +703,7 @@ void on_event_sender_state_changed(void* context, MESSAGE_SENDER_STATE new_state
 
         if (device_state->transport_state->is_trace_on)
         {
-            LogInfo("Event sender state changed [%d->%d]", previous_state, new_state);
+            LogInfo("Event sender state changed [%s, %d->%d]", STRING_c_str(device_state->deviceId), previous_state, new_state);
         }
 
 		device_state->message_sender_state = new_state;
@@ -831,7 +827,7 @@ void on_message_receiver_state_changed(const void* context, MESSAGE_RECEIVER_STA
 
         if (device_state->transport_state->is_trace_on)
         {
-            LogInfo("Message receiver state changed [%d->%d]", previous_state, new_state);
+			LogInfo("Message receiver state changed [%s; %d->%d]", STRING_c_str(device_state->deviceId), previous_state, new_state);
         }
 
 		device_state->message_receiver_state = new_state;
@@ -993,6 +989,11 @@ static int sendPendingEvents(AMQP_TRANSPORT_DEVICE_STATE* device_state)
 
 static void prepareDeviceForConnectionRetry(AMQP_TRANSPORT_DEVICE_STATE* device_state)
 {
+	if (authentication_reset(device_state->authentication) != RESULT_OK)
+	{
+		LogError("Failed resetting the authenticatication state of device %s", device_state->deviceId);
+	}
+
 	destroyMessageReceiver(device_state);
 	destroyEventSender(device_state);
 	rollEventsBackToWaitList(device_state);
@@ -1150,14 +1151,14 @@ static RESULT device_DoWork(AMQP_TRANSPORT_DEVICE_STATE* device_state)
 			if (authentication_authenticate(device_state->authentication) != RESULT_OK)
 			{
 				// Codes_SRS_IOTHUBTRANSPORTAMQP_09_146: [If the SAS token fails to be sent to CBS (cbs_put_token), IoTHubTransportAMQP_DoWork shall fail and exit immediately]
-				LogError("Failed authenticating AMQP connection of device '%s'.", device_state->deviceId);
+				LogError("Failed authenticating AMQP connection [%s]", STRING_c_str(device_state->deviceId));
 				result = RESULT_RETRYABLE_ERROR;
 			}
 			break;
 		case AUTHENTICATION_STATUS_EXPIRED:
 			if (authentication_refresh(device_state->authentication) != RESULT_OK)
 			{
-				LogError("AMQP transport failed to refresh authentication of device '%s'.", device_state->deviceId);
+				LogError("AMQP transport failed to refresh authentication [%s]", STRING_c_str(device_state->deviceId));
 				result = RESULT_CRITICAL_ERROR;
 			}
 			break;
@@ -1167,7 +1168,7 @@ static RESULT device_DoWork(AMQP_TRANSPORT_DEVICE_STATE* device_state)
 				device_state->message_receiver == NULL &&
 				createMessageReceiver(device_state) != RESULT_OK)
 			{
-				LogError("Failed creating AMQP transport message receiver for device '%s'.", device_state->deviceId);
+				LogError("Failed creating AMQP transport message receiver [%s]", STRING_c_str(device_state->deviceId));
 				result = RESULT_CRITICAL_ERROR;
 			}
 			// Codes_SRS_IOTHUBTRANSPORTAMQP_09_122: [IoTHubTransportAMQP_DoWork shall destroy the transport_state->message_receiver (and set it to NULL) if it exists and transport_state->receive_messages is false] 
@@ -1175,28 +1176,28 @@ static RESULT device_DoWork(AMQP_TRANSPORT_DEVICE_STATE* device_state)
 				device_state->message_receiver != NULL &&
 				destroyMessageReceiver(device_state) != RESULT_OK)
 			{
-				LogError("Failed destroying AMQP transport message receiver for device '%s'.", device_state->deviceId);
+				LogError("Failed destroying AMQP transport message receiver [%s]", STRING_c_str(device_state->deviceId));
 			}
 
 			if (device_state->message_sender == NULL &&
 				createEventSender(device_state) != RESULT_OK)
 			{
-				LogError("Failed creating AMQP transport event sender for device '%s'.", device_state->deviceId);
+				LogError("Failed creating AMQP transport event sender [%s]", STRING_c_str(device_state->deviceId));
 				result = RESULT_CRITICAL_ERROR;
 			}
 			else if (device_state->message_sender_state == MESSAGE_SENDER_STATE_OPEN &&
 				sendPendingEvents(device_state) != RESULT_OK)
 			{
-				LogError("AMQP transport failed sending events for device '%s'.", device_state->deviceId);
+				LogError("AMQP transport failed sending events [%s]", STRING_c_str(device_state->deviceId));
 				result = RESULT_CRITICAL_ERROR;
 			}
 			break;
 		case AUTHENTICATION_STATUS_FAILURE:
-			LogError("Authentication failed for device '%s'.", device_state->deviceId);
+			LogError("Authentication failed [%s]", STRING_c_str(device_state->deviceId));
 			result = RESULT_CRITICAL_ERROR;
 			break;
 		case AUTHENTICATION_STATUS_TIMEOUT:
-			LogError("Authentication timed-out for device '%s'.", device_state->deviceId);
+			LogError("Authentication timed-out [%s]", STRING_c_str(device_state->deviceId));
 			result = RESULT_CRITICAL_ERROR;
 			break;
 		default:
@@ -1298,7 +1299,7 @@ static void IoTHubTransportAMQP_Unsubscribe(IOTHUB_DEVICE_HANDLE handle)
     }
     else
     {
-        // Codes_SRS_IOTHUBTRANSPORTAMQP_09_040: [IoTHubTransportAMQP_Unsubscribe shall set transport_handle->receive_messages to false and return success code.]
+        // Codes_SRS_IOTHUBTRANSPORTAMQP_09_040: [IoTHubTransportAMQP_Unsubscribe shall set transport_handle->receive_messages to false.]
 		AMQP_TRANSPORT_DEVICE_STATE* device_state = (AMQP_TRANSPORT_DEVICE_STATE*)handle;
 		device_state->receive_messages = false;
     }
@@ -1314,6 +1315,7 @@ static IOTHUB_CLIENT_RESULT IoTHubTransportAMQP_GetSendStatus(IOTHUB_DEVICE_HAND
         result = IOTHUB_CLIENT_INVALID_ARG;
         LogError("Invalid handle to IoTHubClient AMQP transport instance.");
     }
+	// Codes_SRS_IOTHUBTRANSPORTAMQP_09_041: [IoTHubTransportAMQP_GetSendStatus shall return IOTHUB_CLIENT_INVALID_ARG if called with NULL parameter.]
     else if (iotHubClientStatus == NULL)
     {
         result = IOTHUB_CLIENT_INVALID_ARG;
@@ -1703,14 +1705,14 @@ static void IoTHubTransportAMQP_Destroy(TRANSPORT_LL_HANDLE handle)
 static STRING_HANDLE IoTHubTransportAMQP_GetHostname(TRANSPORT_LL_HANDLE handle)
 {
     STRING_HANDLE result;
-    /*Codes_SRS_IOTHUBTRANSPORTAMQP_02_001: [ If parameter handle is NULL then IoTHubTransportAMQP_GetHostname shall return NULL. ]*/
+    // Codes_SRS_IOTHUBTRANSPORTAMQP_02_001: [If parameter handle is NULL then IoTHubTransportAMQP_GetHostname shall return NULL.]
     if (handle == NULL)
     {
         result = NULL;
     }
     else
     {
-        /*Codes_SRS_IOTHUBTRANSPORTAMQP_02_002: [ Otherwise IoTHubTransportAMQP_GetHostname shall return a STRING_HANDLE for the hostname. ]*/
+        // Codes_SRS_IOTHUBTRANSPORTAMQP_02_002: [Otherwise IoTHubTransportAMQP_GetHostname shall return the target IoT Hub FQDN as a STRING_HANDLE.]
         result = ((AMQP_TRANSPORT_INSTANCE*)(handle))->iotHubHostFqdn;
     }
     return result;

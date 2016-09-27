@@ -17,17 +17,17 @@ extern const TRANSPORT_PROVIDER* AMQP_Protocol(void);
   
   The following static functions are provided in the fields of the TRANSPORT_PROVIDER structure:
 
-    - IoTHubTransportAMQP_GetHostname, 
+    - IoTHubTransportAMQP_GetHostname, ok
     - IoTHubTransportAMQP_SetOption,
     - IoTHubTransportAMQP_Create,
     - IoTHubTransportAMQP_Destroy,
     - IoTHubTransportAMQP_Register,
     - IoTHubTransportAMQP_Unregister,
-    - IoTHubTransportAMQP_Subscribe,
-    - IoTHubTransportAMQP_Unsubscribe,
+    - IoTHubTransportAMQP_Subscribe, ok
+    - IoTHubTransportAMQP_Unsubscribe, ok
     - IoTHubTransportAMQP_DoWork,
-    - IoTHubTransportAMQP_GetSendStatus
-  
+    - IoTHubTransportAMQP_GetSendStatus ok
+
 
 ### IoTHubTransportAMQP_GetHostname
 
@@ -37,12 +37,15 @@ extern const TRANSPORT_PROVIDER* AMQP_Protocol(void);
  
 IoTHubTransportAMQP_GetHostname provides a STRING_HANDLE containing the hostname with which the transport has been created.
 
+**SRS_IOTHUBTRANSPORTAMQP_02_001: [**If parameter `handle` is NULL then `IoTHubTransportAMQP_GetHostname` shall return NULL.**]**
+**SRS_IOTHUBTRANSPORTAMQP_02_002: [**Otherwise IoTHubTransportAMQP_GetHostname shall return the target IoT Hub FQDN as a STRING_HANDLE.**]**
 
-**SRS_IOTHUBTRANSPORTAMQP_02_001: [** If parameter `handle` is NULL then `IoTHubTransportAMQP_GetHostname` shall return NULL. **]**
-**SRS_IOTHUBTRANSPORTAMQP_02_002: [**  Otherwise IoTHubTransportAMQP_GetHostname shall return a STRING_HANDLE for the hostname. **]**
-  
+
 ### IoTHubTransportAMQP_Create
 
+```c
+TRANSPORT_LL_HANDLE IoTHubTransportAMQP_Create(const IOTHUBTRANSPORT_CONFIG* config)
+```
 
 This function creates all the inner components required by the IoT Hub client to work properly, returning a handle for a structure that represents it.
 
@@ -141,7 +144,10 @@ This function will close connection established through AMQP API, as well as des
   
 
 ### IoTHubTransportAMQP_DoWork
- 
+
+```c
+void IoTHubTransportAMQP_DoWork(TRANSPORT_LL_HANDLE handle, IOTHUB_CLIENT_LL_HANDLE iotHubClientHandle)
+```
   
 #### Parameter Verification
 
@@ -336,6 +342,10 @@ This section defines the functionality of the callback function 'on_message_rece
 
 ### IoTHubTransportAMQP_Register
 
+```c
+IOTHUB_DEVICE_HANDLE IoTHubTransportAMQP_Register(TRANSPORT_LL_HANDLE handle, const IOTHUB_DEVICE_CONFIG* device, IOTHUB_CLIENT_LL_HANDLE iotHubClientHandle, PDLIST_ENTRY waitingToSend)
+```
+
 This function registers a device with the transport.  The AMQP transport only supports a single device established on create, so this function will prevent multiple devices from being registered.
 
 **SRS_IOTHUBTRANSPORTAMQP_17_005: [**IoTHubTransportAMQP_Register shall return NULL if the TRANSPORT_LL_HANDLE is NULL.**]**
@@ -355,6 +365,10 @@ This function registers a device with the transport.  The AMQP transport only su
 
 ### IoTHubTransportAMQP_Unregister
 
+```c
+void IoTHubTransportAMQP_Unregister(IOTHUB_DEVICE_HANDLE deviceHandle)
+```
+
 This function is intended to remove a device as registered with the transport.  As there is only one IoT Hub Device per AMQP transport established on create, this function is a placeholder not intended to do meaningful work.
 
 SRS_IOTHUBTRANSPORTAMQP_17_004: [**IoTHubTransportAMQP_Unregister shall return.**]**
@@ -362,6 +376,10 @@ SRS_IOTHUBTRANSPORTAMQP_17_004: [**IoTHubTransportAMQP_Unregister shall return.*
   
   
 ### IoTHubTransportAMQP_Subscribe
+
+```c
+int IoTHubTransportAMQP_Subscribe(IOTHUB_DEVICE_HANDLE handle)
+```
 
 This function enables the transport to notify the upper client layer of new messages received from the cloud to the device.
 
@@ -372,15 +390,22 @@ This function enables the transport to notify the upper client layer of new mess
 
 ### IoTHubTransportAMQP_Unsubscribe
 
+```c
+void IoTHubTransportAMQP_Unsubscribe(IOTHUB_DEVICE_HANDLE handle)
+```
 
 This function disables the notifications to the upper client layer of new messages received from the cloud to the device.
 
 **SRS_IOTHUBTRANSPORTAMQP_09_039: [**IoTHubTransportAMQP_Unsubscribe shall fail if the transport handle parameter received is NULL.**]**
 
-**SRS_IOTHUBTRANSPORTAMQP_09_040: [**IoTHubTransportAMQP_Unsubscribe shall set transport_handle->receive_messages to false and return success code.**]**
+**SRS_IOTHUBTRANSPORTAMQP_09_040: [**IoTHubTransportAMQP_Unsubscribe shall set transport_handle->receive_messages to false.**]**
   
   
 ### IoTHubTransportAMQP_GetSendStatus
+
+```c
+IOTHUB_CLIENT_RESULT IoTHubTransportAMQP_GetSendStatus(IOTHUB_DEVICE_HANDLE handle, IOTHUB_CLIENT_STATUS *iotHubClientStatus)
+```
 
 **SRS_IOTHUBTRANSPORTAMQP_09_041: [**IoTHubTransportAMQP_GetSendStatus shall return IOTHUB_CLIENT_INVALID_ARG if called with NULL parameter.**]**
 
@@ -391,6 +416,10 @@ This function disables the notifications to the upper client layer of new messag
   
   
 ### IoTHubTransportAMQP_SetOption
+
+```c
+IOTHUB_CLIENT_RESULT IoTHubTransportAMQP_SetOption(TRANSPORT_LL_HANDLE handle, const char* option, const void* value)
+```
 
 **SRS_IOTHUBTRANSPORTAMQP_09_044: [**If handle parameter is NULL then IoTHubTransportAMQP_SetOption shall return IOTHUB_CLIENT_INVALID_ARG.**]**
 
