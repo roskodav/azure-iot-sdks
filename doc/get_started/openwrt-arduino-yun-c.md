@@ -94,7 +94,7 @@ scp ~/openwrt/sdk/build_dir/target-mips_r2_uClibc-0.9.33.2/azure-iot-sdks-1/seri
 On the Arduino Yun device, install the ca-certificates package like below:
 
 ```
-wget https://downloads.openwrt.org/snapshots/trunk/ar71xx/generic/packages/base/ca-certificates_20160104_all.ipk --no-check-certificate
+wget http://downloads.openwrt.org/snapshots/trunk/ar71xx/generic/packages/base/ca-certificates_20160104_all.ipk --no-check-certificate
 opkg install ca-certificates_20160104_all.ipk
 ```
 You might get an error message at this step(return code 127), but the certificates will be installed.
